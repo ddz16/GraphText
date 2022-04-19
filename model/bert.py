@@ -9,7 +9,7 @@ class TextEncoder(nn.Module):
         super(TextEncoder, self).__init__()
 
         if pretrained:  # if use pretrained bert model
-            self.bert_model = BertModel.from_pretrained('allenai/scibert_scivocab_uncased')
+            self.bert_model = BertModel.from_pretrained('./bert_pretrained/')
         else:
             config = BertConfig(vocab_size=31090, )
             self.bert_model = BertModel(config)
@@ -24,3 +24,6 @@ class TextEncoder(nn.Module):
         else:  # use [cls] token
             output = self.bert_model(input_ids, attention_mask)['pooler_output']  # b,d
         return output
+
+if __name__ == '__main__':
+    model = TextEncoder()

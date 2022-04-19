@@ -93,7 +93,7 @@ class GraphTextDataset(Dataset):
         return data_aug
 
     def tokenizer_text(self, text):
-        tokenizer = BertTokenizer.from_pretrained('allenai/scibert_scivocab_uncased')
+        tokenizer = BertTokenizer.from_pretrained('../bert_pretrained/')
         sentence_token = tokenizer.encode_plus(text=text,
                                                truncation=True,
                                                padding='max_length',
@@ -110,7 +110,9 @@ if __name__ == '__main__':
     mydataset = GraphTextDataset()
     train_loader = DataLoader(
         mydataset,
-        batch_size=16,
+        batch_size=64,
     )
     for i, data in enumerate(train_loader):
-        print(data)
+        print(data[0].x)
+        print(data[1])
+        print(data[2])

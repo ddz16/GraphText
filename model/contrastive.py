@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from gin import GraphEncoder
-from bert import TextEncoder
+from model.gin import GraphEncoder
+from model.bert import TextEncoder
 import torch.nn.functional as F
 import numpy as np
 from transformers import BertForPreTraining
@@ -53,7 +53,7 @@ class simclr(torch.nn.Module):
         return y
 
     def forward(self, graph_data, input_ids, attention_mask):
-        graph, edge_index, batch = graph_data.data, graph_data.edge_index, graph_data.batch
+        graph, edge_index, batch = graph_data.x, graph_data.edge_index, graph_data.batch
 
         batch_size = graph.size(0)
         device = graph.device
@@ -81,8 +81,8 @@ class simclr(torch.nn.Module):
         return logits_per_graph, logits_per_text, loss
 
     def graph_self(self, graph_data1, graph_data2):
-        graph1, edge_index1, batch1 = graph_data1.data, graph_data1.edge_index, graph_data1.batch
-        graph2, edge_index2, batch2 = graph_data2.data, graph_data2.edge_index, graph_data2.batch
+        graph1, edge_index1, batch1 = graph_data1.x, graph_data1.edge_index, graph_data1.batch
+        graph2, edge_index2, batch2 = graph_data2.x, graph_data2.edge_index, graph_data2.batch
         batch_size = graph1.size(0)
         device = graph1.device
 

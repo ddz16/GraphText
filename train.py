@@ -21,16 +21,16 @@ np.random.seed(fix_seed)
 parser = argparse.ArgumentParser(description='Graph and Text Unsupervised Pretraining')
 
 # choose model
-parser.add_argument('--graph_model', type=str, required=True, default='GIN',
+parser.add_argument('--graph_model', type=str, default='GIN',
                     help='model name, options: [GIN, Graphformer]')
-parser.add_argument('--text_model', type=str, required=True, default='Bert',
+parser.add_argument('--text_model', type=str, default='Bert',
                     help='model name, options: [Bert]')
 
 # train mode
 parser.add_argument('--graph_self', action='store_true', help='use graph self-supervise or not', default=False)
 
 # data preprocess and data loader
-parser.add_argument('--data_path', type=str, default='../data/', help='root path of the data file')
+parser.add_argument('--data_path', type=str, default='./data/', help='root path of the data file')
 parser.add_argument('--graph_aug1', type=str, default='dnodes',
                     help='augment type, options:[dnodes, pedges, subgraph, mask_nodes, random2, random3, random4]')
 parser.add_argument('--graph_aug2', type=str, default='pedges',
