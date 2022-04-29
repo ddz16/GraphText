@@ -27,9 +27,20 @@ class GraphEncoder(torch.nn.Module):
             self.convs.append(conv)
             self.bns.append(bn)
 
+        self.init_emb()
+
+    def init_emb(self):
+        for m in self.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_uniform_(m.weight.data)
+                if m.bias is not None:
+                    m.bias.data.fill_(0.0)
+
     def forward(self, x, edge_index, batch):
         xs = []
         for i in range(self.num_gc_layers):
+            print(x.dtype)
+            print(edge_index.dtype)
             x = F.relu(self.convs[i](x, edge_index))
             x = self.bns[i](x)
             xs.append(x)
