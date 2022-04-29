@@ -18,11 +18,11 @@ class GINPretrainDataset(Dataset):
         self.graph_aug1 = graph_aug1
         self.graph_aug2 = graph_aug2
         self.text_max_len = text_max_len
-        self.graph_name_list = os.listdir(root+'graph/')
-        # self.graph_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/graph/')
+        # self.graph_name_list = os.listdir(root+'graph/')
+        self.graph_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/graph/')
         self.graph_name_list.sort()
-        self.text_name_list = os.listdir(root+'text/')
-        # self.text_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/text/')
+        # self.text_name_list = os.listdir(root+'text/')
+        self.text_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/text/')
         self.text_name_list.sort()
 
     def __len__(self):
@@ -99,8 +99,8 @@ class GINPretrainDataset(Dataset):
         return data_aug
 
     def tokenizer_text(self, text):
-        # tokenizer = BertTokenizer.from_pretrained('/data2/zyj/20200705v1/GraphText/bert_pretrained/')
-        tokenizer = BertTokenizer.from_pretrained('./bert_pretrained/')
+        tokenizer = BertTokenizer.from_pretrained('/data2/zyj/20200705v1/GraphText/bert_pretrained/')
+        # tokenizer = BertTokenizer.from_pretrained('./bert_pretrained/')
         sentence_token = tokenizer(text=text,
                                    truncation=True,
                                    padding='max_length',
