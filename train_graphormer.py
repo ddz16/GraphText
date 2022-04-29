@@ -6,11 +6,14 @@ from torch import optim
 import torch.nn as nn
 import os
 import time
-from model.contrastive_graphformer import simclr
+from model.contrastive_graphformer import GraphormerSimclr
+from pytorch_lightning import Trainer
+import pytorch_lightning as pl
+import pytorch_lightning.callbacks as plc
 from torch_geometric.loader import DataLoader
 import torch_geometric
 from torch.utils.data import DataLoader
-from data_provider.pretrain_dataset import GraphformerTextDataset
+from data_provider.pretrain_datamodule import GraphormerPretrainDataModule
 from data_provider.collator import collator_text
 from functools import partial
 import warnings
@@ -78,29 +81,20 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--lr', type=float, default=0.0001, help='optimizer learning rate')
 
 # GPU
+parser.add_argument('--seed', type=int, default=100, help='random seed')
 parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
 parser.add_argument('--gpu', type=int, default=0, help='gpu')
 parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
-parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
+# parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
 
+parser = Trainer.add_argparse_args(parser)
+parser = GraphormerSimclr.add_model_specific_args(parser)  # add model args
+parser = GraphormerPretrainModule.add_argparse_args(parser)  # add data args
 args = parser.parse_args()
+pl.seed_everything(args.seed)
 
 # gpu setting
 args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
-
-if args.use_gpu and args.use_multi_gpu:
-    args.devices = args.devices.replace(' ', '')
-    device_ids = args.devices.split(',')
-    args.device_ids = [int(id_) for id_ in device_ids]
-    args.gpu = args.device_ids[0]
-
-if args.use_gpu:
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu) if not args.use_multi_gpu else args.devices
-    device = torch.device('cuda:{}'.format(args.gpu))
-    print('Use GPU: cuda:{}'.format(args.gpu))
-else:
-    device = torch.device('cpu')
-    print('Use CPU')
 
 if args.use_multi_gpu and args.use_gpu:  # 使用多GPU
     multi_gpu_flag = True
@@ -110,96 +104,54 @@ else:
 print('Args in experiment:')
 print(args)
 
-setting = '{}_{}_selfg{}_aug1{}_aug2{}_maxlen{}'.format(
-            args.graph_model,
-            args.text_model,
-            args.graph_self,
-            args.graph_aug1,
-            args.graph_aug2,
-            args.text_max_len,
-)
-path = os.path.join(args.checkpoints, setting)
 
-if not os.path.exists(path):
-    os.makedirs(path)
+print('Args in experiment:')
+print(args)
 
-time_now = time.time()
-
-# dataset
-data_set = GraphformerTextDataset(
-    root=args.data_path,
-    text_max_len=args.text_max_len,
-    graph_aug1=args.graph_aug1,
-    graph_aug2=args.graph_aug2,
-)
-# dataloader
-train_loader = DataLoader(
-    data_set,
-    batch_size=args.batch_size,
-    shuffle=True,
-    num_workers=1,
-    pin_memory=True,
-    collate_fn=partial(collator_text,
-                       max_node=args.max_node,
-                       multi_hop_max_dist=args.multi_hop_max_dist,
-                       spatial_pos_max=args.spatial_pos_max),
-)
+# data
+dm = GraphormerPretrainDataModule.from_argparse_args(args)
 
 # model
-model = simclr(args).to(device)
-if multi_gpu_flag:
-    model = torch.nn.DataParallel(model, device_ids=args.device_ids)
+model = GraphormerSimclr(
+    temperature=args.temperature,
+    bert_hidden_dim=args.bert_hidden_dim,
+    bert_pretrain=args.bert_pretrain,
+    graph_self=args.graph_self,
+    warmup_updates=args.warmup_updates,
+    tot_updates=args.tot_updates,
+    peak_lr=args.peak_lr,
+    end_lr=args.end_lr,
+    weight_decay=args.weight_decay,
+    graphormer_pretrain=args.graphormer_pretrain,
+    num_atoms=args.num_atoms,
+    num_in_degree=args.num_in_degree,
+    num_out_degree=args.num_out_degree,
+    num_edges=args.num_edges,
+    num_spatial=args.num_spatial,
+    num_edge_dis=args.num_edge_dis,
+    edge_type=args.edge_type,
+    multi_hop_max_dist=args.multi_hop_max_dist,
+    num_encoder_layers=args.num_encoder_layers,
+    graph_embed_dim=args.graph_embed_dim,
+    graph_ffn_embed_dim=args.graph_ffn_embed_dim,
+    graph_attention_heads=args.graph_attention_heads,
+    dropout=args.dropout,
+    attention_dropout=args.attention_dropout,
+    activation_dropout=args.activation_dropout,
+    encoder_normalize_before=args.encoder_normalize_before,
+    pre_layernorm=args.pre_layernorm,
+    apply_graphormer_init=args.apply_graphormer_init,
+    activation_fn=args.activation_fn,
+)
+
+print('total params:', sum(p.numel() for p in model.parameters()))
 
 
-# optimizer
-model_optim = optim.Adam(model.parameters(), lr=args.lr)
-for epoch in range(args.train_epochs):
-    iter_count = 0
-    train_steps = len(train_loader)
-    # print(train_steps)  64/batch_size
-    train_loss = []
-    model.train()
-    epoch_time = time.time()
-    for i, (aug1, aug2, text1, mask1, text2, mask2) in enumerate(train_loader):
-        iter_count += 1
-        model_optim.zero_grad()
-        graph1 = aug1.to(device)
-        graph2 = aug2.to(device)
-        text1, mask1, text2, mask2 = text1.to(device), mask1.to(device), text2.to(device), mask2.to(device)
+callbacks = []
+callbacks.append(plc.ModelCheckpoint(dirpath="gin/checkpoint/", every_n_epochs=5))
+trainer = Trainer.from_argparse_args(args, callbacks=callbacks)
 
-        graph1_rep = model.encode_graph(graph1)
-        graph2_rep = model.encode_graph(graph2)
-        text1_rep = model.encode_text(text1, mask1)
-        text2_rep = model.encode_text(text2, mask2)
-
-        _, _, loss11 = model(graph1_rep, text1_rep)
-        _, _, loss12 = model(graph1_rep, text2_rep)
-        _, _, loss21 = model(graph2_rep, text1_rep)
-        _, _, loss22 = model(graph2_rep, text2_rep)
-
-        if args.graph_self:
-            _, _, loss_graph_self = model.graph_self(graph1_rep, graph2_rep)
-            loss = (loss11 + loss12 + loss21 + loss22 + loss_graph_self) / 5.0
-        else:
-            loss = (loss11 + loss12 + loss21 + loss22) / 4.0
-
-        train_loss.append(loss.item())
-        loss.backward()
-        model_optim.step()
-
-        if (i + 1) % 100 == 0:
-            print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
-            speed = (time.time() - time_now) / iter_count
-            left_time = speed * ((args.train_epochs - epoch) * train_steps - i)
-            print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-            iter_count = 0
-            time_now = time.time()
-
-    print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-    train_loss = np.average(train_loss)
-    print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
-    if (epoch+1) % 10 == 0:
-        torch.save(model.state_dict(), path + "epoch-" + str(epoch + 1) + ".pt")
+trainer.fit(model, datamodule=dm)
 
 
 
