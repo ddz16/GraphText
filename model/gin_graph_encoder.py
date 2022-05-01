@@ -39,8 +39,8 @@ class GraphEncoder(torch.nn.Module):
     def forward(self, x, edge_index, batch):
         xs = []
         for i in range(self.num_gc_layers):
-            print(x.dtype)
-            print(edge_index.dtype)
+            # print(x.dtype)
+            # print(edge_index.dtype)
             x = F.relu(self.convs[i](x, edge_index))
             x = self.bns[i](x)
             xs.append(x)

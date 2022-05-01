@@ -97,8 +97,19 @@ class GraphormerSimclr(pl.LightningModule):
             apply_graphormer_init=apply_graphormer_init,
             activation_fn=activation_fn,
         )
-        if self.graphormer_pretrain:
-            载入预训练
+
+        if self.graphormer_pretrain:  # load pretrained graphormer
+            ckpt = torch.load('/data2/zyj/20200705v1/GraphText/graphormer_pretrained/checkpoint_best_pcqm4mv2.pt',
+                              map_location=self.device)
+            state_dict = ckpt['model']
+            # print(state_dict.keys())
+            for k in list(state_dict.keys()):
+                if k.startswith('module.'):
+                    # remove prefix module.
+                    state_dict[k[len("module."):]] = state_dict[k]
+                    del state_dict[k]
+            # print(state_dict.keys())
+            self.graph_encoder.load_state_dict(state_dict)
 
         self.text_encoder = TextEncoder(pretrained=self.bert_pretrain)
 

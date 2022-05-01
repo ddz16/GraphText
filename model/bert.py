@@ -8,7 +8,7 @@ class TextEncoder(nn.Module):
     def __init__(self, pretrained=True):
         super(TextEncoder, self).__init__()
         if pretrained:  # if use pretrained bert model
-            self.bert_model = BertModel.from_pretrained('/data2/zyj/20200705v1/GraphText/bert_pretrained/')
+            self.bert_model = BertModel.from_pretrained('bert_pretrained/')
         else:
             config = BertConfig(vocab_size=31090, )
             self.bert_model = BertModel(config)

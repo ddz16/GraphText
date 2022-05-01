@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from collator import collator
-from wrapper import MyGraphPropPredDataset, MyPygPCQM4MDataset, MyZINCDataset
+from data_provider.collator import collator
+from data_provider.wrapper import MyGraphPropPredDataset, MyPygPCQM4MDataset, MyZINCDataset
 
 from pytorch_lightning import LightningDataModule
 import torch

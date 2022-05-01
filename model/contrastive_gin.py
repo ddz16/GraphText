@@ -38,6 +38,7 @@ class GINSimclr(pl.LightningModule):
 
         self.graph_encoder = GraphEncoder(self.gin_num_features, self.gin_hidden_dim, self.gin_num_layers)
         self.text_encoder = TextEncoder(pretrained=self.bert_pretrain)
+        # self.feature_extractor.freeze()
 
         self.graph_proj_head = nn.Sequential(
           nn.Linear(self.embedding_dim, self.embedding_dim),

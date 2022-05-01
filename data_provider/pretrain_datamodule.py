@@ -8,7 +8,7 @@ from torch.nn import functional as F
 import torch_geometric
 from torch.utils.data import DataLoader
 from functools import partial
-from pretrain_dataset import GINPretrainDataset, GraphformerPretrainDataset
+from data_provider.pretrain_dataset import GINPretrainDataset, GraphformerPretrainDataset
 from data_provider.collator import collator_text
 
 
@@ -17,17 +17,18 @@ class GINPretrainDataModule(LightningDataModule):
         self,
         num_workers: int = 0,
         batch_size: int = 256,
-        root: str = '../data/',
+        root: str = 'data/',
         text_max_len: int = 128,
         graph_aug1: str = 'dnodes',
         graph_aug2: str = 'pedges',
+        multi_gpu_flag: bool = True,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.multi_gpu_flag = args.multi_gpu_flag
+        self.multi_gpu_flag = multi_gpu_flag
         self.dataset = GINPretrainDataset(root, text_max_len, graph_aug1, graph_aug2)
 
     def setup(self, stage: str = None):

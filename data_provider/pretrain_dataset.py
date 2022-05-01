@@ -1,15 +1,13 @@
 import torch
 from torch_geometric.data import Data, Dataset
 
-from torch_geometric.loader import DataLoader
 from utils.GraphAug import drop_nodes, permute_edges, subgraph, mask_nodes
 from copy import deepcopy
 import numpy as np
 import os
 import random
-import torch_geometric
 from transformers import BertTokenizer, BertForPreTraining
-from wrapper import preprocess_item
+from data_provider.wrapper import preprocess_item
 
 
 class GINPretrainDataset(Dataset):
@@ -18,11 +16,11 @@ class GINPretrainDataset(Dataset):
         self.graph_aug1 = graph_aug1
         self.graph_aug2 = graph_aug2
         self.text_max_len = text_max_len
-        # self.graph_name_list = os.listdir(root+'graph/')
-        self.graph_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/graph/')
+        self.graph_name_list = os.listdir(root+'graph/')
+        # self.graph_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/graph/')
         self.graph_name_list.sort()
-        # self.text_name_list = os.listdir(root+'text/')
-        self.text_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/text/')
+        self.text_name_list = os.listdir(root+'text/')
+        # self.text_name_list = os.listdir('/data2/zyj/20200705v1/GraphText/data/text/')
         self.text_name_list.sort()
 
     def __len__(self):
@@ -99,8 +97,8 @@ class GINPretrainDataset(Dataset):
         return data_aug
 
     def tokenizer_text(self, text):
-        tokenizer = BertTokenizer.from_pretrained('/data2/zyj/20200705v1/GraphText/bert_pretrained/')
-        # tokenizer = BertTokenizer.from_pretrained('./bert_pretrained/')
+        # tokenizer = BertTokenizer.from_pretrained('/data2/zyj/20200705v1/GraphText/bert_pretrained/')
+        tokenizer = BertTokenizer.from_pretrained('bert_pretrained/')
         sentence_token = tokenizer(text=text,
                                    truncation=True,
                                    padding='max_length',
@@ -214,7 +212,7 @@ class GraphformerPretrainDataset(torch.utils.data.Dataset):
         return input_ids, attention_mask
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # mydataset = GraphTextDataset()
     # train_loader = torch_geometric.loader.DataLoader(
     #     mydataset,
@@ -233,18 +231,18 @@ if __name__ == '__main__':
     #     print(text2.shape)
     #     print(mask2.shape)
 
-    mydataset = GraphformerPretrainDataset(root='./data/')
-    train_loader = torch.utils.data.DataLoader(
-        mydataset,
-        batch_size=16,
-        shuffle=True,
-        num_workers=4
-    )
-    for i, (aug1, aug2, text1, mask1, text2, mask2) in enumerate(train_loader):
-        print(aug1)
-        print(aug1.x.shape)
-        print(aug2)
-        print(aug2.x.dtype)
+    # mydataset = GraphformerPretrainDataset(root='./data/')
+    # train_loader = torch.utils.data.DataLoader(
+    #     mydataset,
+    #     batch_size=16,
+    #     shuffle=True,
+    #     num_workers=4
+    # )
+    # for i, (aug1, aug2, text1, mask1, text2, mask2) in enumerate(train_loader):
+    #     print(aug1)
+    #     print(aug1.x.shape)
+    #     print(aug2)
+    #     print(aug2.x.dtype)
         # print(text1.shape)
         # print(mask1.shape)
         # print(text2.shape)
